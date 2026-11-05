@@ -1,0 +1,10 @@
+# Whitelist: publish code and docs only. Everything else stays local.
+*
+!.gitignore
+!tools/
+!tools/*.py
+!beats.md
+!HANDOFF.md
+!README.txt
+!README.md
+!DEVELOPMENT-JOURNEY.html

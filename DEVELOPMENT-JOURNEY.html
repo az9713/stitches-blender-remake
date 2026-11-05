@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="dark">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Development Journey: "How Stitches Work" remake in Blender</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --text:#e2e8f0; --text2:#cbd5e1; --muted:#94a3b8; --a1:#fb923c; --a2:#2dd4bf; --line:#334155; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 920px; margin: 0 auto; padding: 32px 20px 96px; }
+  h1 { font-size: 1.9rem; line-height:1.25; margin: 0 0 8px; }
+  h2 { font-size: 1.4rem; margin: 56px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--a1); }
+  h3 { font-size: 1.1rem; margin: 28px 0 6px; color: var(--a2); }
+  p, li { color: var(--text2); }
+  code { background:#0b1220; border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:.88em; color:var(--text); }
+  pre { background:#0b1220; border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; font-size:.85em; color:var(--text); }
+  pre code { border:0; padding:0; background:none; }
+  .meta { color: var(--muted); font-size:.92rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin: 16px 0; }
+  .card p:first-child, .card ul:first-child { margin-top:0; } .card p:last-child, .card ul:last-child { margin-bottom:0; }
+  table { width:100%; border-collapse:collapse; margin:14px 0; font-size:.92rem; }
+  th, td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--text2); }
+  th { color:var(--text); background:#172033; }
+  .tag { display:inline-block; font-size:.72rem; font-weight:600; letter-spacing:.03em; padding:1px 7px; border-radius:99px; margin-right:6px; vertical-align:middle; }
+  .live { background:#0f3d3a; color:#2dd4bf; } .recon { background:#4a2a0c; color:#fb923c; } .none { background:#3b1d2a; color:#f9a8d4; }
+  .rule { background:#10303a; border-radius:8px; padding:4px 14px; margin:14px 0; color:var(--text); }
+  .warn { background:#33200f; border-radius:8px; padding:4px 14px; margin:14px 0; color:var(--text); }
+  a { color: var(--a2); }
+  nav ol { columns: 2; color: var(--text2); } nav a { text-decoration:none; }
+  svg text { fill:#e2e8f0; font:12px system-ui, sans-serif; }
+  @media (max-width:700px){ nav ol{columns:1} }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Development Journey: a Blender remake of "How Stitches Work"</h1>
+<p class="meta"><strong>Date written:</strong> 2026-11-04 &nbsp;|&nbsp; <strong>Deliverable:</strong> <code>stitches_final_v2.mp4</code> (first version: <code>stitches_final.mp4</code>) in the project folder &nbsp;|&nbsp; <strong>Written by:</strong> Claude Sonnet 5.5 in Claude Code</p>
+
+<div class="card">
+<p><strong>Brief, quoted from <code>README.txt</code> (text that the user extracted from a prompt box in the source tutorial video):</strong></p>
+<p>"https://www.youtube.com/shorts/ttuKeS5k4Uo https://youtube.com/shorts/yGw0nhlUtkQ go download this video and watch it frame by frame. Can we make the exact same video?"</p>
+<p>The reference video is "How Stitches Work" by Zack D. Films (<code>ttuKeS5k4Uo</code>). The method comes from a YouTube tutorial by Omi (<code>_fIoJ_ywGfY</code>), saved as <code>transcript.txt</code>.</p>
+</div>
+
+<h2 id="how">0. How to read this document</h2>
+<p>This project ran across several Claude Code sessions. This document is written at the end of the last one. The tags below tell you how well each part is supported.</p>
+<table>
+<tr><th>Tag</th><th>Meaning</th></tr>
+<tr><td><span class="tag live">LIVE</span></td><td>I did or saw it in this session. The tool output is in my conversation.</td></tr>
+<tr><td><span class="tag recon">RECONSTRUCTED</span></td><td>It happened in an earlier session. I cannot see that conversation. I rebuilt the facts from <code>HANDOFF.md</code>, <code>beats.md</code>, the scripts in <code>tools/</code>, file timestamps, and logs. The reasons behind a decision are inferred from the code and its comments unless I say otherwise.</td></tr>
+<tr><td><span class="tag none">NOT KNOWN</span></td><td>No evidence exists in the files. I list these so you do not read silence as a fact.</td></tr>
+</table>
+<div class="warn"><p>Because the earlier sessions are reconstructed, this document has no verbatim error text from them, except text that survives in <code>HANDOFF.md</code> and the memory file. Do not treat my reasoning for an early decision as a record of what was said at the time.</p></div>
+
+<nav class="card"><strong>Contents</strong>
+<ol>
+<li><a href="#how">How to read this</a></li>
+<li><a href="#summary">The whole project in one page</a></li>
+<li><a href="#stack">Tech stack</a></li>
+<li><a href="#measure">Stage 1: measure the reference</a></li>
+<li><a href="#scene">Stage 2: build the 3D scene</a></li>
+<li><a href="#render">Stage 3: render 930 frames</a></li>
+<li><a href="#sound">Stage 4: sound</a></li>
+<li><a href="#post">Stage 5: finish the picture and encode</a></li>
+<li><a href="#iterate">Version 1 to version 2</a></li>
+<li><a href="#session">This session, step by step</a></li>
+<li><a href="#wrong">What went wrong</a></li>
+<li><a href="#verify">Verification</a></li>
+<li><a href="#unknown">Unknown unknowns</a></li>
+<li><a href="#stand">Where things stand</a></li>
+<li><a href="#gloss">Glossary</a></li>
+<li><a href="#files">File map</a></li>
+</ol></nav>
+
+<h2 id="summary">1. The whole project in one page</h2>
+<p><span class="tag recon">RECONSTRUCTED</span> The user wanted a 31-second vertical video that shows a stitched cut on a leg healing. The reference video does this in one continuous shot. The camera pushes in on the wound, holds, pushes in further to show the tissue stages, then pulls out to a thin scar. The user chose to make a new video with the same beats, but with new 3D assets, new words, and a new voice. He did not choose to copy frames or audio (<code>HANDOFF.md</code>, "the user's decisions (2026-11-03)").</p>
+<p>No AI video generator made any picture. Every frame is a real 3D render. A Python script builds the scene in Blender. A second script renders it. A third script grades the colour. ffmpeg joins the picture and the sound.</p>
+
+<svg viewBox="0 0 880 250" width="100%" role="img" aria-label="Pipeline diagram">
+  <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/></marker></defs>
+  <g stroke="#334155" fill="#1e293b">
+    <rect x="10" y="10" width="150" height="50" rx="8"/><rect x="190" y="10" width="150" height="50" rx="8"/>
+    <rect x="370" y="10" width="150" height="50" rx="8"/><rect x="550" y="10" width="150" height="50" rx="8"/>
+    <rect x="730" y="10" width="140" height="50" rx="8"/>
+    <rect x="10" y="150" width="150" height="50" rx="8"/><rect x="190" y="150" width="150" height="50" rx="8"/>
+    <rect x="550" y="150" width="150" height="50" rx="8"/><rect x="730" y="150" width="140" height="50" rx="8"/>
+  </g>
+  <g>
+    <text x="22" y="32">Reference video</text><text x="22" y="48">(AV1, 930 frames)</text>
+    <text x="202" y="32">tools/measure.py</text><text x="202" y="48">numbers + beats.md</text>
+    <text x="382" y="32">tools/build_scene.py</text><text x="382" y="48">→ build/scene.blend</text>
+    <text x="562" y="32">tools/render_frames.py</text><text x="562" y="48">→ 930 RGBA PNG</text>
+    <text x="742" y="32">tools/post.py</text><text x="742" y="48">grade + upscale</text>
+    <text x="22" y="172">ElevenLabs</text><text x="22" y="188">voice, music, effects</text>
+    <text x="202" y="172">tools/mix.py</text><text x="202" y="188">→ audio/mix.wav</text>
+    <text x="562" y="172">ffmpeg (inside post.py)</text><text x="562" y="188">H.264 + AAC</text>
+    <text x="742" y="172">stitches_final_v2.mp4</text><text x="742" y="188">1296x2304, 31.031 s</text>
+  </g>
+  <g stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+    <path d="M160,35 H188"/><path d="M340,35 H368"/><path d="M520,35 H548"/><path d="M700,35 H728"/>
+    <path d="M160,175 H188"/><path d="M340,175 H548"/><path d="M800,60 V148"/><path d="M700,175 H728"/>
+  </g>
+  <text x="300" y="115" fill="#94a3b8" style="fill:#94a3b8">measure.py also runs on the finished video and compares it with the reference.</text>
+</svg>
+
+<table>
+<tr><th>Stage</th><th>Output</th><th>Time cost</th></tr>
+<tr><td>Measure reference</td><td><code>beats.md</code>, <code>build/measure.txt</code></td><td>not recorded</td></tr>
+<tr><td>Build scene</td><td><code>build/scene.blend</code> (17.7 MB)</td><td>not recorded</td></tr>
+<tr><td>Render</td><td>930 PNG in <code>build/frames/</code></td><td>5.85 h of logged frame times (see section 5)</td></tr>
+<tr><td>Sound</td><td><code>audio/mix.wav</code>, 31.000 s</td><td>ElevenLabs: 8,843 credits, about $1.47</td></tr>
+<tr><td>Finish + encode</td><td><code>stitches_final_v2.mp4</code>, 19.9 MB</td><td>about 35 minutes or less (section 10)</td></tr>
+</table>
+
+<h2 id="stack">2. Tech stack</h2>
+<table>
+<tr><th>Tool</th><th>Version or setting</th><th>What it did</th></tr>
+<tr><td>Blender</td><td>5.2.1 LTS (hash 9e2066aef7ef), run headless with <code>blender -b</code></td><td>Builds and renders the 3D scene. "Headless" means no window opens.</td></tr>
+<tr><td>Cycles</td><td>GPU, OptiX, OptiX denoiser</td><td>Blender's path-tracing renderer. It traces light rays, so skin, shadow, and thread look physical.</td></tr>
+<tr><td>MPFB add-on</td><td><code>bl_ext.blender_org.mpfb</code></td><td>Free human generator. It makes the body mesh and the rig (the bone skeleton). This is the "free MPFB human" in the handoff.</td></tr>
+<tr><td>Python</td><td>3.13 (system), plus Blender's own Python</td><td>All scripts. NumPy does the vertex maths. OpenCV (<code>cv2</code>) reads video and does phase correlation and image finishing.</td></tr>
+<tr><td>ffmpeg</td><td>WinGet install</td><td>Reads and writes video and audio. Mixes the sound. Encodes H.264 and AAC.</td></tr>
+<tr><td>ElevenLabs</td><td>voice "Tom Taylor", model <code>eleven_v4</code></td><td>Voice, music, and sound effects, made through an MCP connector in Claude Code.</td></tr>
+<tr><td>Claude Code</td><td>Opus 5.5 high in the early part of this session; Sonnet 5.5 low after the user's switch</td><td>The agent harness. It wrote scripts, ran commands, and read the logs.</td></tr>
+<tr><td>Machine</td><td>Windows 11, 31.7 GB RAM, NVIDIA GPU (OptiX needs one; the model is not recorded)</td><td>Everything ran locally. No cloud render.</td></tr>
+</table>
+
+<h2 id="measure">3. Stage 1: measure the reference</h2>
+<p><span class="tag recon">RECONSTRUCTED</span> <span class="tag live">LIVE</span> (the script ran again this session)</p>
+<p>The tutorial's central idea is this: do not guess what the reference looks like. Measure every frame, then build to the measured numbers. <code>tools/measure.py</code> reads a video frame by frame at 256x456 pixels. For each frame it records:</p>
+<ul>
+<li><strong>Brightness</strong> (mean grey level, 0 to 255), <strong>contrast</strong> (standard deviation of grey level), and <strong>saturation</strong> (mean of the HSV S channel).</li>
+<li><strong>Sideways motion</strong> in pixels per frame. It uses <em>phase correlation</em>: it compares the frequency content of two frames to find how far the picture slid.</li>
+<li><strong>Zoom</strong>. It converts the frame spectrum to log-polar coordinates. A zoom becomes a slide there, so phase correlation reads it. The product of the per-frame zooms gives the cumulative zoom.</li>
+<li>The colour of the top-left corner, which shows the blue background in wide shots.</li>
+</ul>
+<p>The findings are in <code>beats.md</code>: no hard cuts; 31.031 s; 1296x2304; 930 frames at 30000/1001 fps; zoom 1.00 at 0 s, 1.43 at 4 s, 2.94 at 23 s, and 0.57 at 30 s; loudness -12.0 LUFS, loudness range 1.6 LU, true peak +1.6 dBFS.</p>
+<h3>Decisions and traps in this stage</h3>
+<ul>
+<li><strong>Measured loudness against the transcript.</strong> The tutorial says "around minus 5 LUFS". The downloaded file measures -12.0 LUFS. The project uses -12.0. Rule: <em>trust your own measurement of the file in front of you over a number somebody said.</em></li>
+<li><strong>cv2 seeking is wrong on this file.</strong> OpenCV cannot jump to a frame in this AV1 video and lands on the wrong frames. Every script decodes in order, from frame 1.</li>
+<li><strong>The zoom number is too small.</strong> Phase correlation under-reads the push-in by about a power of 2. The camera distances in <code>DIST</code> (<code>build_scene.py</code>) were calibrated on the spacing of the stitches in reference frames instead of on the zoom column.</li>
+</ul>
+
+<h2 id="scene">4. Stage 2: build the 3D scene</h2>
+<p><span class="tag recon">RECONSTRUCTED</span> from <code>tools/build_scene.py</code> (869 lines, read in full this session). It runs as <code>blender -b --python tools/build_scene.py -- build/scene.blend</code>. It has options <code>--cuts 23</code> and <code>--hair 12000</code>. The file is one script on purpose.</p>
+
+<h3>4.1 The human</h3>
+<p><code>build_human()</code> asks MPFB for a male body with these macro values: muscle 0.88, weight 0.62, proportions 0.7, height 0.55, age 0.5, caucasian 1.0. It adds the default rig with weights. It then deletes all geometry above z = 1.08 m or more than 0.30 m from the centre line, because the camera never sees the upper body. It also removes vertex groups and modifiers that the video does not need. Less geometry means a smaller, faster scene.</p>
+
+<h3>4.2 The wound is the skin, not a sticker</h3>
+<p>The most important design decision is in the docstring of <code>build_patch()</code>: <em>"The wound IS the skin: nothing floats above it, so no triangulation poke-through (transcript's bug)."</em> The tutorial's method put a separate wound patch over the skin, and the skin showed through it. This build avoids that:</p>
+<ol>
+<li>It subdivides the calf skin around the cut (23 cuts per edge) to get enough vertices.</li>
+<li>It writes six <strong>shape keys</strong> (saved vertex shapes that Blender can blend): <code>open</code>, <code>closed</code>, <code>swell</code>, <code>gap</code>, <code>ridge</code>, <code>scar</code>. Each key moves vertices along the skin normal by a few millimetres (for example <code>closed</code> = -4.2 mm).</li>
+<li>It writes nine <strong>vertex attributes</strong> (<code>a_g_open</code>, <code>a_lobe</code>, <code>a_fringe</code>, <code>a_vd</code>, <code>a_vt</code>, and others). These are per-vertex masks that the shader reads to paint colour on the correct region.</li>
+<li>The function <code>field(u, v)</code> defines every shape with smooth-step maths. <code>u</code> is distance across the cut. <code>v</code> is position along it from -1 to 1. The cut is 2 x 0.066 m long and 0.37 m up the leg (<code>ZC</code>, <code>HALF_L</code>). It is wavy (<code>centre()</code>) and tapers at both ends (<code>taper()</code>).</li>
+<li><code>vessel_segments()</code> grows branching lines with a fixed random seed (11). Each segment has a growth order. The material reveals them in that order, so vessels appear to grow.</li>
+</ol>
+<p>The healing story is then only <em>keyframes</em>. <code>STAGE_KEYS</code> lists seconds and values for each shape key. For example, <code>open</code> goes 1 until 2.6 s and 0 at 5.0 s. <code>swell</code> starts rising at 8 s and peaks at 15.5 s. <code>scar</code> appears at 26.8 s. The shader has matching timed values (<code>k_inf</code>, <code>k_yel</code>, <code>k_v</code>, <code>k_grow</code>, <code>k_tis</code>, <code>k_scar</code>).</p>
+
+<h3>4.3 Skin material</h3>
+<p><code>skin_material()</code> builds one node graph. It mixes layers in this order: base tone with large and fine noise; pale patch; pore dots (Voronoi texture); hair-follicle dashes stretched along the leg; orange fringe then red lips (inflammation); dark brown-red ridged tissue; yellow scaffold in the gap; bright orange-red vessels; the open wound; the dark closed line; the scar. The surface is a Principled BSDF with subsurface scattering (weight 0.45, scale 0.004, radius 0.9/0.35/0.18) and roughness 0.5 plus noise. A bump node (strength 0.42, distance 1.1 mm) adds pores. <strong>Subsurface scattering</strong> lets light travel a little inside the skin. Without it, skin looks like painted plastic.</p>
+
+<h3>4.4 Hair: curves, not particles</h3>
+<p>The first try used Blender's particle hair. The handoff records the result: the hair came out about 10 cm long, and one 38 s test frame spent 37 s on hair. The final <code>add_hair()</code> writes 12,000 short hair curves directly (3 control points each, 3 to 6 mm long, radius 0.06 mm at the root). It picks root points by triangle area, weighted so that hair stops near the wound and ends at z = 0.505 m. Hair is parented to the shin bone. It does not move on its own.</p>
+
+<h3>4.5 Stitches, thread, needle, scissors</h3>
+<ul>
+<li>12 stitches (<code>STITCH_TIMES</code>) land one per 7.5 frames, as the transcript says (6 to 8 frames). Each draws itself over 7 frames by animating <code>bevel_factor_end</code> from 0 to 1.</li>
+<li>Each stitch is a curve with a <code>swell</code> shape key, so the thread rises with the swelling skin. Its thickness animates, then thins and vanishes at 24.6 to 26.4 s.</li>
+<li>A slack loop on the camera-right side pulls tight between 3.2 and 5.0 s (shape key <code>taut</code>). The loops hide at 10 s.</li>
+<li>The needle is a thin steel cylinder, visible from 2.8 s to 5.84 s. The scissors are two blades, two rings, and a rivet. They pop in open at 5.27 s, close at 5.84 s, and leave at 6.2 s. Those times were measured on the reference.</li>
+</ul>
+
+<h3>4.6 Clothes</h3>
+<p><code>shell()</code> copies the body between two heights and pushes it out along the normals. That gives shorts (from z = 0.610 m up), a blue sock (0.055 to 0.128 m), and a shoe (below 0.096 m). It is cheap and it follows the leg through the walk. It is also the reason the shoe is boxy: it is an inflated copy of the foot, not a modelled shoe. This is the first item in "known gaps" (section 14).</p>
+
+<h3>4.7 The walk</h3>
+<p>The man walks on a treadmill, so the leg swings but does not move forward. <code>build_walk()</code> keys six bones every 4 frames on a sine wave with a 5.0 s period. A 5.0 s period makes the pose at 0 s equal the pose at 30 s, as in the reference. <code>pin_wound()</code> then moves the whole armature so the wound keeps only 22 % (<code>keep=0.22</code>) of its natural sway. That matches the measured 0.447 px/frame of sideways motion.</p>
+
+<h3>4.8 Camera, focus, light</h3>
+<ul>
+<li>One camera moves on one straight line to the wound (<code>axis = (0.10, -1.0, -0.30)</code> normalised). <code>DIST</code> lists the distance in metres at set times: 0.73 m at 0 s, 0.30 m at 4.2 s, 0.105 m at 22 s, 1.20 m at 31.1 s. The curves are Bezier with auto-clamped handles.</li>
+<li>Lens 50 mm, sensor height 36 mm, <code>clip_start</code> 0.005 m. The default clip distance of 0.1 m cut the leg open at the 0.105 m macro distance. The fix cost a debug cycle (handoff).</li>
+<li>Depth of field follows an empty object parented to the wound. The f-stop is 3.2 to 3.6 early (soft background), 8.0 at 16 to 24.5 s (more in focus), then 3.2 again.</li>
+<li>One sun lamp (energy 4.6, 2 degree angle, warm colour) from upper left and front, plus a pale blue world light at strength 0.26. The sun puts the right edge of the leg in shade, as in the reference.</li>
+</ul>
+
+<h3>4.9 Render settings</h3>
+<table>
+<tr><th>Setting</th><th>Value</th><th>Why</th></tr>
+<tr><td>Resolution</td><td>1080 x 1920</td><td>Cheaper than the final 1296 x 2304. <code>post.py</code> upscales by 1.2.</td></tr>
+<tr><td>Transparency</td><td><code>film_transparent = True</code>, PNG RGBA</td><td>The background is not rendered. <code>post.py</code> adds the measured blue gradient. This also guarantees the blue matches the reference exactly.</td></tr>
+<tr><td>View transform</td><td>Khronos PBR Neutral</td><td>Keeps colours close to the material values. Not the default Filmic or AgX.</td></tr>
+<tr><td>Samples</td><td>default in <code>setup_render()</code> is 96; <code>render_frames.py --samples N</code> overrides it</td><td>The handoff says "48 spp". The exact command is not recorded. <span class="tag none">NOT KNOWN</span></td></tr>
+<tr><td>Bounces</td><td>max 4, diffuse 2, glossy 2, transmission 0, volume 0</td><td>Fewer bounces, faster frames. Skin uses subsurface scattering, not glass.</td></tr>
+<tr><td>Motion blur</td><td>on, shutter 0.3</td><td>Makes the walk and the push-in look filmed.</td></tr>
+<tr><td>Frame rate</td><td>30 / 1.001 = 29.97 fps</td><td>Same as the reference (30000/1001).</td></tr>
+</table>
+
+<h2 id="render">5. Stage 3: render 930 frames</h2>
+<p><span class="tag recon">RECONSTRUCTED</span> <code>tools/render_frames.py</code> opens <code>scene.blend</code>, picks the OptiX GPU, and renders each listed frame to <code>OUTDIR/fNNNN.png</code>. <strong>If the PNG already exists it skips the frame</strong>, so a stopped run resumes by running the same command again.</p>
+<p>From <code>build/render.log</code> (read this session): 930 "TIMED frame" lines, mean 22.7 s, fastest 8.2 s, slowest 2,733.7 s, total 5.85 hours. The handoff says the first 456 frames averaged 18.8 s. I do not know why one frame took 2,733.7 s. It may match the time Claude Code stopped the render for low memory, or the time another Blender job shared the GPU. Both are in the handoff, but I cannot link them to that frame. <span class="tag none">NOT KNOWN</span></p>
+<h3>Three problems from this stage (handoff and memory file)</h3>
+<ol>
+<li><strong>Relative output path.</strong> Headless Blender 5.2.1 on this PC sent <code>build/frames/f0001.png</code> to <code>C:\build\frames\f0001.png</code>. A 456-frame render went to the wrong folder and a check said "0 frames". Fix: <code>os.path.abspath(a[0])</code> in <code>render_frames.py</code>. Saved as the memory file <code>blender-relative-output-path.md</code>. Rule: <em>read the "Saved:" line in the render log to learn the real folder.</em></li>
+<li><strong>Low-memory stop.</strong> Claude Code stopped the background render at frame 456. The script resumed from the existing PNGs. The setting <code>CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP=1</code> at Claude Code start turns this stop off.</li>
+<li><strong>A second Blender job.</strong> Another job, a script from another project, ran at the same time. It is not part of this project. Frame time rose from about 22 s to 36 to 46 s. The agent did not touch it.</li>
+</ol>
+
+<h2 id="sound">6. Stage 4: sound</h2>
+<p><span class="tag recon">RECONSTRUCTED</span> The narration is 82 words in five parts (<code>beats.md</code>), at a target of 2.6 words per second. ElevenLabs made voice, music, and four sound effects. Every asset in use is saved in <code>audio/</code>. The files with suffix <code>_a</code> and <code>_b</code> are two takes from one call (default two takes). Their hashes differ and their lengths are equal. Take A is in use.</p>
+<p><code>tools/mix.py</code> runs one ffmpeg filter graph:</p>
+<ol>
+<li>Cut voice take A at its measured silences into six clips, place each at a set time with a 20 ms fade in and a 40 ms fade out.</li>
+<li>Music at -15 dB, trimmed to 31.031 s, 1.5 s fade out.</li>
+<li>Needle sound at -20 dB on each stitch landing (the times come from the same formula as <code>STITCH_TIMES</code>). Snip at -8 dB at 5.80 s. Whoosh at -14 dB at 13.6 s and 24.7 s. Tissue at -22 dB at 15, 17, 19, 21, 23 s. <code>silenceremove</code> trims lead-in silence so each effect lands on its time.</li>
+<li>Mix, then compress (threshold -22 dB, ratio 3, 4 dB make-up), then <code>loudnorm</code> to -12 LUFS, then a limiter at 0.9.</li>
+</ol>
+<p>Result in version 1 and version 2 (same file): <span class="tag live">LIVE</span> -12.6 LUFS integrated, loudness range 2.5 LU (<code>ffmpeg -af ebur128</code> on the final MP4, measured this session). Reference: -12.0 LUFS, 1.6 LU.</p>
+<div class="warn"><p><strong>Nobody has listened to the mix.</strong> The agent can measure sound, but it cannot hear it. The numbers say the loudness is near the reference. They do not say the voice is clear over the music, that the effects land on the right picture, or that the voice sounds good.</p></div>
+
+<h2 id="post">7. Stage 5: finish the picture and encode</h2>
+<p><span class="tag live">LIVE</span> <code>tools/post.py</code> (97 lines, read in full) takes each rendered PNG and makes the final frame:</p>
+<ol>
+<li>Upscale 1080x1920 to 1296x2304 with Lanczos interpolation.</li>
+<li><strong>Grade</strong> the foreground: raise the colours to the power <code>GAMMA</code> (a number below 1 makes the picture brighter), then scale the distance from grey by <code>SAT</code>.</li>
+<li>Composite over a vertical blue gradient. The gradient colours are samples from the left edge of the reference at 0 s (<code>G0</code>) and 30 s (<code>G30</code>), 11 points each, blended by frame number. The PNG has <em>straight</em> alpha, so the maths is <code>fg*a + bg*(1-a)</code>.</li>
+<li>Blur 0.9 px (softer lens), add a glow from pixels above 0.75 (blur 28 px, weight 0.7), multiply a vignette (18 % at the corners), add Gaussian grain of strength <code>GRAIN</code>.</li>
+<li>Send raw frames to ffmpeg through a pipe. Encode H.264, <code>yuv420p</code>, CRF 20, preset <code>medium</code>, <code>+faststart</code>. Audio is AAC 256 kbps.</li>
+</ol>
+<p><code>post.py</code> also has a <code>sheet</code> mode that puts reference and render side by side. That produced <code>build/compare_latest.png</code> in an earlier session.</p>
+
+<h2 id="iterate">8. Version 1 to version 2: the iteration that this session finished</h2>
+<p><span class="tag recon">RECONSTRUCTED</span> for how the numbers were found. <span class="tag live">LIVE</span> for the version 2 run.</p>
+<p>Version 1 existed after the first full render. Measured against the reference, it was too dark and too saturated. The handoff records a grid search (<code>calib.py</code> in the old session scratchpad, now gone): <code>GAMMA</code> from 0.55 to 1.00 and <code>SAT</code> from 0.55 to 1.00 in steps of 0.03, scored on 30 frames (every 31st) at 256x456 against the reference on the same three picture metrics. The best pair was <code>GAMMA = 0.73</code>, <code>SAT = 0.88</code>. No new render was needed, because the grade runs after the render. That saved about 5.85 hours.</p>
+<p>The changes from version 1 to version 2 in <code>tools/post.py</code>:</p>
+<table>
+<tr><th>Item</th><th>Version 1</th><th>Version 2</th></tr>
+<tr><td>Gamma, saturation</td><td>values in the old file (not recorded)</td><td>0.73, 0.88</td></tr>
+<tr><td>Grain</td><td>0.008</td><td>0.005</td></tr>
+<tr><td>x264</td><td>preset <code>slow</code>, CRF 16</td><td>preset <code>medium</code>, CRF 20</td></tr>
+<tr><td>Frame 930</td><td>cut by <code>-shortest</code> (929 frames)</td><td>kept (930 frames)</td></tr>
+<tr><td><code>+faststart</code></td><td>no</td><td>yes</td></tr>
+</table>
+<h3>Result (<span class="tag live">LIVE</span>, from <code>build/measure.txt</code> and <code>build/measure_v2.txt</code>)</h3>
+<table>
+<tr><th>Mean per frame</th><th>Reference</th><th>Version 1</th><th>Version 2</th></tr>
+<tr><td>Brightness</td><td>132.4</td><td>108.4</td><td>129.1</td></tr>
+<tr><td>Contrast</td><td>52.8</td><td>56.6</td><td>52.3</td></tr>
+<tr><td>Saturation</td><td>108.4</td><td>142.0</td><td>112.9</td></tr>
+<tr><td>Sideways motion, px/frame at 256 px wide</td><td>0.447</td><td>4.750 raw (about 0.44 without second 25, per handoff)</td><td>0.624 (see below)</td></tr>
+<tr><td>Zoom jerk RMS</td><td>about 0.0014</td><td>0.001561</td><td>0.001463</td></tr>
+<tr><td>File size</td><td>(AV1, 1.63 Mb/s)</td><td>164.9 MB</td><td>19.9 MB (H.264, 4.90 Mb/s)</td></tr>
+</table>
+<div class="warn"><p><strong>A correction.</strong> In my summary message to the user I printed the version 1 sideways-motion cell as 0.447 and the zoom-jerk row with the reference and version 1 values swapped. The measure files show the values in the table above. The three picture rows were right. I am sorry for the error. Nothing downstream used the wrong cells.</p></div>
+<p>The picture rows (brightness, contrast, saturation) moved from gaps of 24.0, 3.8, and 33.6 to gaps of 3.3, 0.5, and 4.5. Sideways motion is higher in version 2 than in the reference (0.624 against 0.447). The row for second 25 reads 6.024 px/frame. That is the fast pull-out, where the handoff says phase correlation fails. If that one row is replaced by a typical row (about 0.45), the mean falls to about 0.44. This is my arithmetic. I did not run a test that shows the pull-out is the only cause. <span class="tag none">NOT KNOWN</span></p>
+
+<h2 id="session">9. This session, step by step</h2>
+<p><span class="tag live">LIVE</span> The opening: the user cleared the context and attached <code>HANDOFF.md</code>. The handoff said: run the new pass, check, measure, open the file, ask for notes.</p>
+<ol>
+<li><strong>Orientation.</strong> I read <code>beats.md</code> and <code>tools/post.py</code>. I checked: 930 PNGs present; <code>audio/mix.wav</code> present; <code>stitches_final.mp4</code> 164,890,640 bytes; 235 GB free on C:; no Blender or ffmpeg job running; 7.3 GB of 31.7 GB RAM free; the pressure-reap flag not set; <code>mix.wav</code> is 31.000 s.</li>
+<li><strong>Start.</strong> I ran <code>python tools/post.py video build/frames stitches_final_v2.mp4 audio/mix.wav</code> in the background and logged to <code>build/post_v2.log</code>. I told the user "at least 68 minutes", copied from the handoff.</li>
+<li><strong>Status check.</strong> The user asked for a short status. The log showed frame 100. I said about 61 more minutes. This estimate was wrong (section 10).</li>
+<li><strong>Stop.</strong> The user wrote "stop the agent". I loaded the <code>TaskStop</code> tool and stopped the shell task. I checked that no <code>post.py</code> or ffmpeg process remained. The output file was incomplete (2.4 MB, last log line "frame 150"). I did not delete it. I told the user that a new run starts at frame 1.</li>
+<li><strong>Resume.</strong> The user wrote "resume and do not use excessive (model, effort)". I restarted the same command. I started no subagent, because the job is one shell command.</li>
+<li><strong>Model question.</strong> The user asked about Sonnet at low effort. I said it fits the remaining work and not the realism work, and that I cannot change my own model. The user ran <code>/model sonnet</code> and <code>/effort low</code>. This recommendation is a judgement. I have not compared the models on this project.</li>
+<li><strong>Finish.</strong> The run ended with exit code 0 and "OK stitches_final_v2.mp4 930 frames". <code>ffprobe -count_frames</code> returned 930 video frames, video 31.031000 s, audio 31.000000 s. I ran <code>tools/measure.py</code> on the reference and version 2 (output to <code>build/measure_v2.txt</code>), then opened the file with <code>cmd //c start</code>.</li>
+<li><strong>This document.</strong> The user asked for it with the note AMIAQ. I asked four questions (scope, depth, audience, output). He chose the recommended option for each: whole project reconstructed, read the scripts, new reader, project folder in dark mode.</li>
+</ol>
+<p><strong>Human-in-the-loop moments this session:</strong> the stop; the resume; the model switch; the four answers. The stop and the resume cost the progress of the first run (150 frames) and nothing else. The grain uses a fixed random seed (1), so a second run gives the same frames.</p>
+
+<h2 id="wrong">10. What went wrong</h2>
+<table>
+<tr><th>#</th><th>Problem</th><th>Evidence and fix</th></tr>
+<tr><td>1</td><td>My time estimate was wrong by about a factor of 2.</td><td>The handoff said 4.41 s/frame and "at least 68 minutes". The log lines show frame 100 at 19:36:04 or earlier and frame 150 at 19:37:53 or earlier, so at most about 2.2 s/frame. The finished file has the modified time 20:13. I do not know the exact start of the second run, so the total is "about 35 minutes or less". I repeated the handoff figure without a test. The old figure may have come from a time when another job shared the CPU. <span class="tag none">NOT KNOWN</span> Rule: <em>a time estimate in a handoff is a measurement from one machine state. Check it against the first progress lines.</em></td></tr>
+<tr><td>2</td><td>The stopped job left a partial MP4.</td><td>2,359,344 bytes, not playable. <code>post.py</code> has no resume, because a pipe to ffmpeg cannot append. The restart overwrote it. A partial file with the final name is a trap: the name looks done. A safer script writes <code>.partial</code> and renames on success. I did not change the script.</td></tr>
+<tr><td>3</td><td>A summary table with two wrong cells.</td><td>See the correction in section 8. Cause: I took cell values from a handoff sentence whose order was ambiguous ("0.447 vs 4.750 raw", "0.00137 vs 0.00156") and did not open <code>build/measure.txt</code>. I opened it only for this document. Rule: <em>when a number comes from a sentence, open the file that holds it.</em></td></tr>
+<tr><td>4</td><td>Earlier sessions: relative render path, low-memory stop, particle hair, clip distance, treadmill job conflict.</td><td>Section 5 and section 4.4 and 4.8. These are in the handoff, not verbatim errors.</td></tr>
+<tr><td>5</td><td>Earlier sessions: multi-line Python heredocs with triple quotes failed twice in the Bash tool.</td><td>Handoff. Fix: write a file, then run it. The same rule shows in this session: all logic sits in <code>tools/*.py</code>.</td></tr>
+</table>
+<h3>Near-misses and luck</h3>
+<ul>
+<li><strong>A false failure in the data.</strong> The second-25 reading of 133.9 px/frame in version 1 looked like a jump or a cut. A check of frames 745 to 794 showed the largest frame-to-frame change was 8.4 and the median 6.5. So the measurement failed, not the render. A bad metric nearly sent work to the wrong fix.</li>
+<li><strong>The background-colour columns in the measure table</strong> (seconds 2 to 6 and 26) show non-blue colours in both videos. Those seconds are close-ups with no background at the corner. I did not test this fully this session.</li>
+<li><strong>Luck.</strong> The version 2 run did not hit a low-memory stop. 7.3 GB of 31.7 GB was free at the start. The next run may differ if other programs use more memory.</li>
+</ul>
+
+<h2 id="verify">11. Verification</h2>
+<table>
+<tr><th>Claim</th><th>How it was checked</th></tr>
+<tr><td>Version 2 has 930 frames</td><td><code>ffprobe -count_frames</code> returned 930; the log prints "OK ... 930 frames".</td></tr>
+<tr><td>Video 31.031 s, audio 31.000 s</td><td><code>ffprobe</code>. The 0.031 s gap is one frame. The audio ends one frame early.</td></tr>
+<tr><td>Picture metrics near the reference</td><td><code>tools/measure.py</code> on both files (table in section 8).</td></tr>
+<tr><td>Audio loudness</td><td><code>ffmpeg -af ebur128</code> on the final MP4: -12.6 LUFS, LRA 2.5 LU.</td></tr>
+<tr><td>Version 1 unchanged</td><td>File size 164,890,640 bytes and the modified time 11:57 on 2026-11-04 both match the handoff.</td></tr>
+</table>
+<p><strong>Not verified:</strong> that the video looks real (nobody compared frames by eye this session; I did not open any image); that the sound is good; that the file plays in the player the user uses (I started the player, but I did not see the result); that the sideways-motion rise has the cause I suggest; the exact time of the second run.</p>
+
+<h2 id="unknown">12. Unknown unknowns</h2>
+<p>These are things that a person new to this domain does not know to ask about. Each has a short answer and a "what to do".</p>
+
+<h3>12.1 About measuring</h3>
+<div class="card">
+<p><strong>The numbers do not measure realism.</strong> <code>measure.py</code> reads brightness, contrast, saturation, motion, and zoom. Version 2 is close on those. A video can match all five and still have bad skin, a plastic shoe, or a floating thread. The handoff already lists three such faults (shoe, hair, calf).</p>
+<p><strong>What to do:</strong> look at frames side by side with <code>python tools/post.py sheet build/frames out.png 100 400 700</code>, and watch the whole film at full size.</p>
+</div>
+<div class="card">
+<p><strong>Fitting to a metric.</strong> The grade came from a grid search on 30 frames. A search will always find the best pair for the metric you give it. It fits those 30 frames, not "looks right". The match on the other 900 frames is shown by the whole-film numbers (they agree: 129.1 against 132.4), which is good evidence but still one set of three numbers.</p>
+</div>
+<div class="card">
+<p><strong>Averages hide spikes.</strong> The mean sideways motion went from 0.44 to 0.62 because of one second. A mean over 930 frames can look fine with a bad second. Read the per-second table in <code>build/measure_v2.txt</code> as well.</p>
+</div>
+<div class="card">
+<p><strong>A measurement tool has its own errors.</strong> Phase correlation fails at fast zoom, and cv2 seeks wrongly in AV1. Three facts in this project came from a failing instrument, not from the video. Check the instrument first when a number looks extreme.</p>
+</div>
+
+<h3>12.2 About the 3D and render</h3>
+<div class="card">
+<p><strong>Why Cycles, and why it is slow.</strong> Cycles traces light paths with random sampling. Fewer samples give noisy images, so the denoiser (OptiX) cleans the noise. The average of 22.7 s per frame is for a 1080x1920 image at a low sample count on a GPU. More samples or the CPU would take far longer.</p>
+<p><strong>Why a geometry change costs 5.4 hours.</strong> The picture is rendered once. A colour change can run after the render (cheap). A shape change needs all 930 frames again (the handoff estimates 5.4 hours at 48 spp). This is why the grade lives in <code>post.py</code> and not in the scene.</p>
+<p><strong>Alpha and the background.</strong> The scene renders with no background. The blue sky is added later from measured colours. This gives an exact match to the blue but removes any colour bounce from a real sky onto the leg. The reference does not show that bounce clearly, so it was a fair trade. I have not tested the alternative.</p>
+<p><strong>Display-referred and scene-referred.</strong> Blender stores light as linear numbers, and the "view transform" maps them to screen colours. <code>post.py</code> works on the screen colours after that map. A different view transform changes the whole look and the grade values would need a new search.</p>
+<p><strong>Why a human mesh from MPFB.</strong> It is free and rigged. The handoff lists the cost: the shoe is a shell, the hair stops at 0.505 m, and the calf is less bulged than the reference.</p>
+</div>
+
+<h3>12.3 About video and sound files</h3>
+<div class="card">
+<p><strong>CRF and size.</strong> CRF is the quality dial of x264. A lower number gives higher quality and a bigger file. Version 1 (CRF 16, preset slow) is 164.9 MB. Version 2 (CRF 20, preset medium) is 19.9 MB. I did not compare the two files by eye. The size ratio is 8.3 times. Many sites (YouTube, TikTok) encode your upload again, so a very large source file has limited value.</p>
+<p><strong>29.97 against 30.</strong> The frame rate is 30000/1001, not 30. A wrong rate drifts the sound against the picture by about 1 frame every 33 seconds. Everything here keeps 30000/1001.</p>
+<p><strong>Why <code>-shortest</code> dropped a frame in version 1.</strong> The audio is 31.000 s and the video 31.031 s. <code>-shortest</code> stops at the shorter stream. Version 2 does not use it, and the audio ends one frame early. One frame of silence at the end is not audible.</p>
+<p><strong>LUFS.</strong> It measures loudness as the ear does, over the whole file. The reference is at -12.0. Version 2 is at -12.6. A 0.6 LU gap is small. Streaming sites often normalise loudness anyway. The reference's true peak is +1.6 dBFS, which is above full scale. Our limiter keeps peaks below full scale (-0.8 dBFS in version 1).</p>
+</div>
+
+<h3>12.4 About process</h3>
+<div class="card">
+<p><strong>The agent cannot hear, and it sees only if it opens an image.</strong> Most of its checks are numbers. This session I opened no image. If you need a judgement of look or sound, that is your job or a dedicated review step.</p>
+<p><strong>Background jobs can be stopped.</strong> Claude Code can end a background shell under memory pressure. The renderer resumes by skipped PNGs, but <code>post.py</code> does not resume. Design long jobs so that a stop costs little.</p>
+<p><strong>Estimates age.</strong> See problem 1 in section 10.</p>
+<p><strong>Choice of model and effort.</strong> Opus high for judgement and geometry work, Sonnet low for command running and reporting. The handoff says an advisor model was consulted once before the build. I used no subagent and no advisor in this session. I do not have a measured comparison of cost or quality between models for this project.</p>
+<p><strong>No version control.</strong> The project is not a git repository. There is one backup of the scene (<code>build/scene.blend1</code>, from Blender's own save). A disk fault or a bad overwrite would lose the work. The tools folder (5 scripts) is the smallest thing to protect, because the scene and frames can be rebuilt from it. This is a recommendation. I have not acted on it.</p>
+</div>
+
+<h3>12.5 About rights, money, and accuracy</h3>
+<div class="card">
+<p><strong>Imitation of a living channel's format.</strong> The user chose same beats, own words, new assets, no reused frames or audio. That removes direct copying. It does not remove the question of how a viewer or a platform sees a video that copies the structure and look of another creator's popular short. I have no legal view on this and I did not research it. Consider crediting the format's source if you publish.</p>
+<p><strong>Licences of the tools.</strong> I did not check the licence terms for MPFB output, the ElevenLabs voice and music on your plan, or the Omi tutorial's paid skill (it was not used). Check them before commercial use. <span class="tag none">NOT KNOWN</span></p>
+<p><strong>Medical content.</strong> The narration says a deep cut is stitched, swells as cells clear damage, then collagen forms a scaffold, then new vessels grow, then stitches come out and a thin scar remains. This follows the reference's order and is simplified. No clinician reviewed it. The stitch-removal timing and the depiction of tissue colours are artistic. Do not present the video as medical teaching without a review.</p>
+<p><strong>Money.</strong> ElevenLabs: 8,843 credits, about $1.47 (voice 842, music 7,200, effects 802). The GPU render used electricity for about 5.85 h. Claude Code usage cost is not recorded in the files. <span class="tag none">NOT KNOWN</span></p>
+</div>
+
+<h2 id="stand">13. Where things stand</h2>
+<ul>
+<li><strong>Finished:</strong> <code>stitches_final_v2.mp4</code> (19.9 MB, 930 frames, 31.031 s) and <code>stitches_final.mp4</code> (version 1).</li>
+<li><strong>Waiting on the user:</strong> notes on picture and sound after watching version 2. Nothing else is queued.</li>
+<li><strong>Handoff:</strong> <code>HANDOFF.md</code> was out of date at the end of the build. It was updated before the first commit. It now records version 2, the measured results, and the corrected time figure.</li>
+<li><strong>Publishing:</strong> the repo holds code and docs only. A whitelist <code>.gitignore</code> keeps out the frames (each PNG stores a local path), the videos, the scene, the audio, the reference video, and the tutorial transcript.</li>
+</ul>
+
+<h2 id="gaps">14. Known gaps and options</h2>
+<p>From the handoff, unchanged by this session:</p>
+<ul>
+<li>The shoe is a shell of the foot: boxy, with simple laces (<code>build_clothes()</code>).</li>
+<li>Hair stops at z = 0.505 m. There is no hair on the knee. Only the near lower leg has real hair.</li>
+<li>The calf is less bulged than the reference in wide shots.</li>
+<li>A geometry fix needs a rebuild and a new render: about 5.4 hours at 48 spp.</li>
+<li>The Splinters short named in <code>README.txt</code> (<code>yGw0nhlUtkQ</code>) was out of scope.</li>
+</ul>
+<p><strong>Options, not promises:</strong></p>
+<ol>
+<li>Accept version 2 after you watch it.</li>
+<li>Change grade, sound mix, or encode only: cheap, no new render. Use Sonnet.</li>
+<li>Fix shoe, hair, or calf: rebuild plus the 5.4 h render. Use Opus and test on 3 to 5 frames first (<code>render_frames.py</code> accepts a list of frames).</li>
+<li>Put the 5 scripts under git, or copy them to a second place.</li>
+</ol>
+
+<h2 id="gloss">15. Glossary</h2>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Alpha</td><td>Transparency channel of an image. "Straight" alpha means the colour is not pre-multiplied by it.</td></tr>
+<tr><td>Armature, rig, bone</td><td>The skeleton that moves the body mesh.</td></tr>
+<tr><td>Cycles</td><td>Blender's path-tracing renderer.</td></tr>
+<tr><td>CRF</td><td>Constant Rate Factor. x264 quality setting. Lower is better and bigger.</td></tr>
+<tr><td>Denoiser (OptiX)</td><td>NVIDIA AI filter that removes sampling noise from a render.</td></tr>
+<tr><td>Gamma</td><td>Power-law brightness curve. A value below 1 brightens mid tones.</td></tr>
+<tr><td>Headless</td><td>Software that runs without a window.</td></tr>
+<tr><td>LUFS / LRA</td><td>Perceived loudness over a whole file / its spread in loudness.</td></tr>
+<tr><td>MCP</td><td>Model Context Protocol. How Claude Code connects to tools such as ElevenLabs.</td></tr>
+<tr><td>MPFB</td><td>A free Blender add-on that makes rigged human bodies.</td></tr>
+<tr><td>Phase correlation</td><td>Method that finds the shift between two images from their frequency content.</td></tr>
+<tr><td>Shape key</td><td>A saved set of vertex positions. Blender blends between them by a slider.</td></tr>
+<tr><td>spp</td><td>Samples per pixel. More gives less noise and a longer render.</td></tr>
+<tr><td>Subsurface scattering</td><td>Light that enters a surface and leaves nearby. It gives skin its soft look.</td></tr>
+<tr><td>Vignette, grain, glow</td><td>Edge darkening, film-like noise, and a soft halo on bright areas.</td></tr>
+</table>
+
+<h2 id="files">16. File map and knowledge captured</h2>
+<table>
+<tr><th>Path</th><th>Content</th></tr>
+<tr><td><code>HANDOFF.md</code></td><td>Resume file. Updated before the first commit.</td></tr>
+<tr><td><code>beats.md</code></td><td>Camera table, picture beats, narration, measured reference facts.</td></tr>
+<tr><td><code>README.txt</code>, <code>transcript.txt</code></td><td>Source brief and the tutorial transcript.</td></tr>
+<tr><td><code>reference/stitches/</code></td><td>Reference MP4 (AV1) and English captions. Not shared in output.</td></tr>
+<tr><td><code>tools/build_scene.py</code></td><td>Scene (869 lines).</td></tr>
+<tr><td><code>tools/render_frames.py</code></td><td>Resumable frame renderer (27 lines).</td></tr>
+<tr><td><code>tools/mix.py</code></td><td>Sound mix (39 lines).</td></tr>
+<tr><td><code>tools/measure.py</code></td><td>Frame measurements (78 lines).</td></tr>
+<tr><td><code>tools/post.py</code></td><td>Grade and encode (97 lines).</td></tr>
+<tr><td><code>build/scene.blend</code>, <code>scene.blend1</code></td><td>The scene and Blender's backup.</td></tr>
+<tr><td><code>build/frames/</code></td><td>930 RGBA PNG (<code>f0001.png</code> to <code>f0930.png</code>).</td></tr>
+<tr><td><code>build/render.log</code>, <code>measure.txt</code>, <code>measure_v2.txt</code>, <code>post_v2.log</code></td><td>Logs and measurements used here.</td></tr>
+<tr><td><code>audio/</code></td><td>Voice, music, effects, and <code>mix.wav</code>.</td></tr>
+<tr><td>Memory: <code>blender-relative-output-path.md</code></td><td>The only durable memory file for this project. It records the Blender path trap.</td></tr>
+</table>
+<p class="meta">Two rules are worth adding to memory if you want them to carry over: "check a handoff's time estimate against the first progress lines" and "open the measure file before you quote a number". I did not write them. Say so and I will.</p>
+
+</main>
+</body>
+</html>
