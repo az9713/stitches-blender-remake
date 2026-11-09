@@ -18,5 +18,10 @@ A 31-second vertical video of a stitched leg wound healing, built as real 3D in 
 | `stitches_final_v2.mp4` | The finished film (1296x2304, 31 s, 19.9 MB). |
 | `beats.md`, `HANDOFF.md`, `README.txt` | Beat sheet, resume notes, and the source brief. |
 
+## Formal verification report
+[`FORMAL-VERIFICATION-REPORT.html`](https://az9713.github.io/stitches-blender-remake/FORMAL-VERIFICATION-REPORT.html) was made with pstack's `create-formal-verification-skill`: a TLA+ model of `tools/render_frames.py` and `tools/post.py`, checked with TLC.
+
+Result: of 9 rules, 5 break (5 bugs) and 4 hold. The 930 existing frames are clean.
+
 ## What is not in this repo
 Rendered frames, the first version of the video (165 MB, above the GitHub file limit), the Blender scene, the audio, the reference video, and the tutorial transcript stay local. The reference is the work of Zack D. Films (`ttuKeS5k4Uo`). The method follows a tutorial by Omi (`_fIoJ_ywGfY`).

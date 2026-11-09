@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Formal Verification Report</title>
+<style>
+:root {
+  --bg: #0f172a; --card: #1e293b; --code: #0b1222; --text: #e2e8f0; --soft: #cbd5e1; --muted: #94a3b8; --border: #334155;
+  --orange: #fb923c; --teal: #2dd4bf; --break-bg: #431c12; --hold-bg: #0f3a36; --warn-bg: #3b2f0c; --warn: #fbbf24;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --code: #f1f5f9; --text: #0f172a; --soft: #334155; --muted: #526077; --border: #cbd5e1;
+    --orange: #b4490c; --teal: #0b7a70; --break-bg: #fde8dc; --hold-bg: #d8f5f1; --warn-bg: #fdf3d0; --warn: #8a5a00;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; }
+h2 { font-size: 1.45rem; line-height: 1.25; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+h3 { font-size: 1.1rem; margin: 28px 0 8px; color: var(--teal); }
+h4 { font-size: 1rem; margin: 16px 0 4px; }
+p, li { color: var(--soft); }
+strong { color: var(--text); }
+a { color: var(--teal); }
+ul, ol { padding-left: 24px; }
+li { margin: 4px 0; }
+.meta { color: var(--muted); font-size: .92rem; margin: 0; }
+nav { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 24px 0; }
+nav ol { margin: 4px 0 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.stat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+.stat b { display: block; font-size: 2rem; line-height: 1.2; color: var(--text); }
+.stat span { color: var(--muted); font-size: .9rem; }
+.stat.bad b { color: var(--orange); }
+.stat.good b { color: var(--teal); }
+.note { background: var(--warn-bg); border-left: 4px solid var(--warn); border-radius: 4px; padding: 10px 14px; margin: 16px 0; }
+.note p { margin: 0; color: var(--text); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 4px 18px 14px; margin: 18px 0; }
+.card h3 { margin-top: 14px; color: var(--orange); }
+.table { overflow-x: auto; margin: 14px 0; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; background: var(--card); }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--soft); }
+th { color: var(--text); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+code { font: .9em ui-monospace, "Cascadia Code", Consolas, monospace; overflow-wrap: anywhere; }
+pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 10px 0; }
+pre code { font-size: .86rem; line-height: 1.5; color: var(--text); overflow-wrap: normal; white-space: pre; }
+.file { color: var(--muted); font-size: .88rem; margin: 14px 0 -4px; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+.pill.bad { background: var(--break-bg); color: var(--orange); }
+.pill.good { background: var(--hold-bg); color: var(--teal); }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; margin: 14px 0; }
+.flow div { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: .88rem; color: var(--soft); flex: 1 1 130px; }
+.flow div b { display: block; color: var(--text); }
+dl { margin: 8px 0; }
+dt { font-weight: 700; color: var(--text); margin-top: 10px; }
+dd { margin: 2px 0 0; color: var(--soft); }
+</style>
+</head>
+<body>
+<main>
+<h1>Formal Verification Report</h1>
+<p class="meta">Project: <code>ultra_realistic_3d_omi</code> (GitHub repository name: <code>stitches-blender-remake</code>).</p>
+<p class="meta">Code checked: commit <code>1ffe98e</code>. Check last run: 2026-11-08. Tool: TLA+ tools v1.7.4 (TLC 2.19).</p>
+
+<nav aria-label="Contents">
+<strong>Contents</strong>
+<ol>
+<li><a href="#s1">Bottom line</a></li>
+<li><a href="#s2">The method</a></li>
+<li><a href="#s3">The code under test</a></li>
+<li><a href="#s4">The promise, the rules, and the bounds</a></li>
+<li><a href="#s5">The 5 bugs</a></li>
+<li><a href="#s6">What holds, what is not covered, and the assumptions</a></li>
+<li><a href="#s7">How to rerun the check</a></li>
+</ol>
+</nav>
+
+<h2 id="s1">1. Bottom line</h2>
+<div class="stats">
+<div class="stat"><b>9</b><span>rules checked</span></div>
+<div class="stat bad"><b>5</b><span>rules break: 5 bugs</span></div>
+<div class="stat good"><b>4</b><span>rules hold</span></div>
+<div class="stat good"><b>930</b><span>existing frames clean</span></div>
+</div>
+<p>This project renders a film in two steps: <code>tools/render_frames.py</code> makes one PNG per frame, and <code>tools/post.py</code> joins the PNGs into an MP4. The check tested one promise of these two scripts: a stopped run can resume safely, and "OK" means the whole film.</p>
+<p>The promise is not fully true. 5 of 9 rules break. For example, a resumed render can keep a 0-byte frame, and <code>post.py</code> can print "OK" for a film with 1 frame or 0 frames. Bugs 1 to 4 reproduced with real Blender, cv2, and ffmpeg. Bug 5 reproduced with a stand-in for ffmpeg.</p>
+<p><strong>The existing film is not damaged by these bugs.</strong> All 930 frames in <code>build/frames</code> have a PNG end chunk, and none is older than <code>build/scene.blend</code>. <code>stitches_final_v2.mp4</code> has 930 video packets and a duration of 31.031 s. These checks do not judge pixel content.</p>
+<div class="note"><p><strong>Workaround:</strong> use a new frame folder after each scene rebuild. This prevents bug 4. Until the bugs are repaired, also look for a 0-byte <code>f*.png</code> after a stopped render, and count the film's frames after <code>post.py</code>. No product code was changed.</p></div>
+
+<h2 id="s2">2. The method</h2>
+<h3>pstack and create-formal-verification-skill</h3>
+<p><strong>pstack</strong> is a plugin of agent workflows for Cursor and Claude Code, by Lauren Tan. This work used version 0.15.36. A <strong>skill</strong> in pstack is a folder with a <code>SKILL.md</code> file. A coding agent reads that file and follows its instructions.</p>
+<p><strong><code>create-formal-verification-skill</code></strong> tells the agent to do these things:</p>
+<ol>
+<li>Find the code where a bug costs the most and tests reach the least.</li>
+<li>Select the verification tool that fits the question.</li>
+<li>Verify the promise, and show each property failing on a broken variant.</li>
+<li>Report any break as a finding. Do not weaken the property, and do not change product code.</li>
+<li>Generate a project-local skill that a later agent can run. Here that skill is <code>.claude/skills/verify-frame-pipeline/</code>.</li>
+<li>Test the generated skill once on a scratch break in the real code, then drop the break.</li>
+</ol>
+<p>The agent followed these instructions by reading the file. It ran the tools in WSL Ubuntu, because a pstack helper for TLC output, <code>/statechart</code>, fails on native Windows with <code>spawn /bin/sh ENOENT</code>.</p>
+
+<h3>TLA+ and TLC</h3>
+<p><strong>TLA+</strong> is a language for describing a system as states and the steps between states. The model here has 15 steps, such as "Blender opens the PNG", "the render is stopped", and "<code>post.py</code> finishes". A <strong>rule</strong> (TLA+ calls it an invariant) is a statement that must be true in each state.</p>
+<p><strong>TLC</strong> is the model checker for TLA+. It starts from the initial state, applies every possible step, and continues until it finds no new state. If a rule is false in a state, TLC gives the sequence of steps that reaches that state. This sequence is a <strong>counterexample</strong>. TLC searches breadth-first by default, so the first counterexample it finds is a shortest one.</p>
+<p>This is one model step and one rule, from <code>FramePipeline.tla</code>:</p>
+<pre><code>SkipFrame ==
+    /\ rp = "checking" /\ ri &lt;= N
+    /\ (ri \notin Listed \/ Skips(ri))
+    /\ ri' = ri + 1
+    /\ UNCHANGED &lt;&lt;png, scene, rp, redid, stops, rebuilds&gt;&gt; /\ UNCHANGED postVars
+
+OKMeansEveryFrame == pp = "ok" =&gt; {encoded[i].f : i \in DOMAIN encoded} = Frames</code></pre>
+<p>In words: the render job can skip the current frame and move to the next. The rule says that when <code>post.py</code> has printed OK, the set of encoded frames equals the set of all frames.</p>
+
+<h3>Why exhaustive checking finds what tests miss</h3>
+<p>A test checks one sequence that someone thought to write. Bug 1 needs a specific order of events: a stop in the 0.3 s when a PNG is open, then a restart, then an encode. A normal render followed by a normal encode passes, and the real film did pass.</p>
+<p>TLC does not need anyone to imagine the order. At the bounds in <a href="#bounds">section 4</a>, it searches every order of stops, restarts, rebuilds, overlaps, and encodes: 20,819 distinct states.</p>
+<p><strong>The limit:</strong> this search covers the model, not the code. A model can describe code that does not exist. The next two parts of the method reduce that risk.</p>
+
+<h3>How check.py measures 11 facts from the real code</h3>
+<p>A TLA+ model does not read Python, so it cannot see a code change by itself. <code>check.py</code> connects the two. It runs the real scripts against scripted cases, records what they do, and sets the model's constants from the results. Then it runs TLC once per rule.</p>
+<p>It fakes only the edges that are slow or absent in WSL:</p>
+<ul>
+<li><strong><code>bpy</code> (Blender's Python API):</strong> a mock. Its render call writes a small valid PNG at the path that the script selected, or a 0-byte file and then a simulated stop.</li>
+<li><strong><code>cv2</code> and <code>numpy</code>:</strong> mocks, so the check needs no packages.</li>
+<li><strong><code>ffmpeg</code>:</strong> a small shell script on <code>PATH</code>. It records its arguments and its input, then exits with a selected code.</li>
+</ul>
+<p>Two further controls apply in the <code>video()</code> cases. <code>finish()</code>, the image-processing function, is replaced by a stub, because its image work needs the real <code>cv2</code> and <code>numpy</code>. <code>glob.glob</code> returns files in reverse order, so that a missing sort shows. A separate case runs the real <code>finish()</code> with <code>cv2.imread</code> returning <code>None</code>.</p>
+<div class="table"><table>
+<thead><tr><th>Code fact</th><th>Covered lines</th><th>Case that measures it</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td><code>CoversEveryFrame</code></td><td><code>render_frames.py:21</code></td><td>Empty folder, frames 1 2 3: do all render?</td><td>True</td></tr>
+<tr><td><code>SkipsComplete</code></td><td><code>render_frames.py:23-24</code></td><td>A complete PNG for frame 1, newer than the scene: is it skipped?</td><td>True</td></tr>
+<tr><td><code>SkipsDamaged</code></td><td><code>render_frames.py:23-24</code></td><td>A PNG cut short for frame 1: is it skipped?</td><td>True</td></tr>
+<tr><td><code>SkipsStale</code></td><td><code>render_frames.py:23-24</code></td><td>A complete PNG older than the scene: is it skipped?</td><td>True</td></tr>
+<tr><td><code>WriteInPlace</code></td><td><code>render_frames.py:25-26</code></td><td>A stop during the write: does the final name exist?</td><td>True</td></tr>
+<tr><td><code>PostSorts</code></td><td><code>post.py:78</code></td><td>Reverse <code>glob</code> order: does ffmpeg get frames in order?</td><td>True</td></tr>
+<tr><td><code>PostNeedsAll</code></td><td><code>post.py:78-89</code></td><td>930 numbers with frame 2 missing: does it refuse?</td><td>False</td></tr>
+<tr><td><code>PostChecksScene</code></td><td><code>post.py:78-89</code></td><td>All frames older than <code>build/scene.blend</code>: does it refuse?</td><td>False</td></tr>
+<tr><td><code>PostChecksExit</code></td><td><code>post.py:87-89</code></td><td>ffmpeg exits 1: does it refuse to print OK?</td><td>False</td></tr>
+<tr><td><code>FilmInPlace</code></td><td><code>post.py:79-81</code></td><td>Does ffmpeg receive the final file name?</td><td>True</td></tr>
+<tr><td><code>DamagedStops</code></td><td><code>post.py:47</code></td><td><code>cv2.imread</code> gives <code>None</code>: does <code>finish()</code> raise?</td><td>True</td></tr>
+</tbody></table></div>
+<p>If a code change alters a fact, <code>check.py</code> reports the change and exits 2, even if no rule changes its result.</p>
+
+<h3>"Seen to fail first"</h3>
+<p>The pstack skill states the reason: "A check that you have never seen fail proves nothing." Each of the 9 rules was therefore shown failing on a broken copy of the code. The 5 rules that break today also needed proof that they can pass. So the agent wrote repairs in scratch copies, confirmed that all 9 rules pass on the fully repaired copy, and then removed one repair at a time.</p>
+<div class="table"><table>
+<thead><tr><th>Scratch variant</th><th>Change</th><th>Rule that broke</th></tr></thead>
+<tbody>
+<tr><td>Remove skip</td><td><code>render_frames.py:23-24</code> deleted</td><td><code>ResumeRedoesNoFinishedWork</code></td></tr>
+<tr><td>Drop a frame</td><td><code>render_frames.py:21</code>, <code>a[1:]</code> changed to <code>a[2:]</code></td><td><code>RunCoversEveryFrame</code></td></tr>
+<tr><td>No sort</td><td><code>post.py:78</code>, <code>sorted</code> removed</td><td><code>FramesStayInOrder</code></td></tr>
+<tr><td>Decode fallback</td><td><code>post.py:47</code> goes on when <code>imread</code> gives <code>None</code></td><td><code>OKMeansNoDamagedFrame</code></td></tr>
+<tr><td>Repairs minus PNG guards</td><td>Completeness test and temporary-name write removed</td><td><code>ResumeNeverKeepsDamagedFrame</code></td></tr>
+<tr><td>Repairs minus frame count</td><td>Frame count test removed</td><td><code>OKMeansEveryFrame</code></td></tr>
+<tr><td>Repairs minus scene check</td><td>Scene age test removed from <code>post.py</code></td><td><code>OKMeansOneScene</code></td></tr>
+<tr><td>Repairs minus exit check</td><td>ffmpeg exit test removed</td><td><code>OKMeansFfmpegSucceeded</code></td></tr>
+<tr><td>Repairs minus temporary film</td><td>Temporary film name and rename removed</td><td><code>FilmNameAlwaysWhole</code></td></tr>
+</tbody></table></div>
+<p><strong>The scratch break on the real file.</strong> The agent then acted as the next user of the generated skill:</p>
+<ol>
+<li>It deleted lines 23-24 from the real <code>tools/render_frames.py</code>.</li>
+<li>It ran the check. The result was exit 2, 3 changed facts, and the new broken rule <code>ResumeRedoesNoFinishedWork</code>. The check also reported that the covered code differs from the recorded commit.</li>
+<li>It restored the file from a backup and confirmed that the bytes are identical.</li>
+<li>It ran the check again. The result returned to exit 1, the same as before the break.</li>
+</ol>
+<p>The repairs existed only in scratch copies, and they were tested only with the fakes. They were not run with real Blender.</p>
+
+<h3>Replays with real tools</h3>
+<p>A counterexample is a claim about the model. It becomes a bug only when the real code reproduces it. The agent replayed each one on Windows 11 with Blender 5.2.1, cv2 4.13.0, and ffmpeg 7.1.1, in a scratch folder. The test scene was a small noisy plane at 1080x1920, rendered at 1 sample on the CPU. Each test PNG was 4,610,528 bytes. <code>build/frames</code> and the real scene were not used.</p>
+<p>Two of those measurements also set the model:</p>
+<ul>
+<li><strong>The PNG write is not one indivisible step.</strong> The final name appeared at 0 bytes, then showed the full size 0.29 s to 0.41 s later (3 frames). A kill of the Blender process on first sight of <code>f0002.png</code> left a 0-byte file.</li>
+<li><strong>cv2 rejects a PNG cut short.</strong> <code>cv2.imread</code> gave <code>None</code> at all 9 cut positions: 0, 40, 46,105, 1,152,632, 2,305,264, 3,457,896, 4,564,422, 4,610,066, and 4,610,516 bytes. The last position keeps all the data and removes only the end chunk.</li>
+</ul>
+
+<h2 id="s3">3. The code under test</h2>
+<p>The project is a 31-second vertical video of a stitched leg wound healing, built as real 3D in Blender. No AI video generator makes any picture. It has 930 frames at 30000/1001 frames per second. Blender renders each frame with Cycles at 1080x1920, and <code>post.py</code> grades it and upscales it to 1296x2304.</p>
+<div class="flow" role="img" aria-label="Pipeline: build_scene.py writes scene.blend, render_frames.py writes PNG frames, post.py writes the MP4">
+<div><b>build_scene.py</b>writes <code>build/scene.blend</code></div>
+<div><b>render_frames.py</b>runs inside Blender, one frame at a time</div>
+<div><b>f0001 to f0930.png</b>one file per frame</div>
+<div><b>post.py video</b>grades frames, pipes them to ffmpeg</div>
+<div><b>MP4 film</b><code>stitches_final_v2.mp4</code></div>
+</div>
+<p><strong>Why stops matter.</strong> The full render took 5.85 hours: mean 22.7 s per frame, fastest 8.2 s, slowest 2,733.7 s. Claude Code stopped the render once for low memory, at frame 456. A <code>post.py</code> run takes about 35 minutes, and a user stop of it left a 2,359,344-byte MP4 under the final name. Stops are a normal event in this project.</p>
+
+<h3><code>tools/render_frames.py</code></h3>
+<p>Its docstring states the promise: "a frame whose PNG exists is skipped, so a stopped run resumes". The same command runs from the top of the list after each stop.</p>
+<p class="file">tools/render_frames.py, lines 21-26</p>
+<pre><code>21  for f in a[1:]:
+22      path = f"{out}/f{int(f):04d}.png"
+23      if os.path.exists(path):
+24          continue
+25      t = time.time(); sc.frame_set(int(f)); sc.render.filepath = path
+26      bpy.ops.render.render(write_still=True)</code></pre>
+<ul>
+<li><strong>Line 21</strong> loops over the frame numbers on the command line.</li>
+<li><strong>Lines 23-24</strong> skip a frame if the file exists. The test does not look at the file's size, content, or age.</li>
+<li><strong>Lines 25-26</strong> tell Blender to write directly to the final name.</li>
+</ul>
+
+<h3><code>tools/post.py</code></h3>
+<p class="file">tools/post.py, line 47, in <code>finish()</code></p>
+<pre><code>47      im = cv2.imread(path, cv2.IMREAD_UNCHANGED).astype(np.float32) / 255</code></pre>
+<p>If <code>cv2.imread</code> gives <code>None</code>, <code>.astype</code> raises <code>AttributeError</code> and the script stops.</p>
+<p class="file">tools/post.py, lines 78-81, in <code>video()</code></p>
+<pre><code>78      files = sorted(glob.glob(f"{frames_dir}/f*.png"))
+79      cmd = ["ffmpeg", "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", "30000/1001",
+80             "-i", "-"] + (["-i", audio] if audio else []) + ["-c:v", "libx264", "-crf", "20", "-preset", "medium",
+81             "-pix_fmt", "yuv420p", "-movflags", "+faststart"] + (["-c:a", "aac", "-b:a", "256k"] if audio else []) + [out_path]</code></pre>
+<ul>
+<li><strong>Line 78</strong> takes whichever files exist. Nothing compares them with the expected frame list.</li>
+<li><strong>Lines 79-81</strong> start ffmpeg with <code>-y</code> (overwrite) on the final name, before any frame is processed.</li>
+</ul>
+<p class="file">tools/post.py, lines 87-89, in <code>video()</code></p>
+<pre><code>87      p.stdin.close()
+88      p.wait()
+89      print("OK", out_path, len(files), "frames")</code></pre>
+<p>Line 88 waits for ffmpeg, but nothing reads the exit code. Line 89 runs whenever the loop has ended.</p>
+
+<h2 id="s4">4. The promise, the rules, and the bounds</h2>
+<div class="note"><p><strong>The promise.</strong> After any order of stops, restarts, and scene rebuilds, a finished render leaves a complete frame for each listed number, and "OK" from <code>post.py</code> means the film holds each frame once, in order, complete, and from the current scene.</p></div>
+<p>The promise is written as 9 rules, one for each way it can break. "Shortest path" is the number of steps in TLC's shortest counterexample.</p>
+<div class="table"><table>
+<thead><tr><th>Rule</th><th>Plain sentence</th><th>Result</th><th>Shortest path</th></tr></thead>
+<tbody>
+<tr><td><code>ResumeNeverKeepsDamagedFrame</code></td><td>A finished render run leaves no frame file cut short.</td><td><span class="pill bad">BREAKS</span></td><td>10 steps</td></tr>
+<tr><td><code>ResumeRedoesNoFinishedWork</code></td><td>A restart does not render a finished frame of the current scene again.</td><td><span class="pill good">HOLDS</span></td><td>None</td></tr>
+<tr><td><code>RunCoversEveryFrame</code></td><td>A finished render run leaves a file for each listed frame.</td><td><span class="pill good">HOLDS</span></td><td>None</td></tr>
+<tr><td><code>FramesStayInOrder</code></td><td>The film takes frames in frame-number order.</td><td><span class="pill good">HOLDS</span></td><td>None</td></tr>
+<tr><td><code>OKMeansEveryFrame</code></td><td>When <code>post.py</code> prints OK, the film has every frame.</td><td><span class="pill bad">BREAKS</span></td><td>3 steps</td></tr>
+<tr><td><code>OKMeansNoDamagedFrame</code></td><td>When <code>post.py</code> prints OK, the film has no frame cut short.</td><td><span class="pill good">HOLDS</span></td><td>None</td></tr>
+<tr><td><code>OKMeansOneScene</code></td><td>When <code>post.py</code> prints OK, every frame comes from the current scene.</td><td><span class="pill bad">BREAKS</span></td><td>9 steps</td></tr>
+<tr><td><code>OKMeansFfmpegSucceeded</code></td><td>When <code>post.py</code> prints OK, ffmpeg succeeded.</td><td><span class="pill bad">BREAKS</span></td><td>4 steps</td></tr>
+<tr><td><code>FilmNameAlwaysWhole</code></td><td>The film's final name never holds an unfinished film.</td><td><span class="pill bad">BREAKS</span></td><td>1 step</td></tr>
+</tbody></table></div>
+
+<h3 id="bounds">Bounds</h3>
+<div class="table"><table>
+<thead><tr><th>Bound</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Frames</td><td>3</td></tr>
+<tr><td>Stops, of either job</td><td>2</td></tr>
+<tr><td>Scene rebuilds</td><td>1</td></tr>
+<tr><td><code>post.py</code> runs</td><td>2</td></tr>
+<tr><td>Distinct states in the full search</td><td>20,819</td></tr>
+<tr><td>TLC workers</td><td>1</td></tr>
+</tbody></table></div>
+<p>The model has one render job and one <code>post.py</code> job, and these two jobs can overlap. Two further rules, called witnesses, must break on each run. They prove that the model reaches "render finished" and "<code>post.py</code> printed OK", so the rules that start from those states are not empty.</p>
+
+<h3>Why 930 frames is reasoned, not proven</h3>
+<p>TLC searched 3 frames, not 930. The extension rests on this argument:</p>
+<ul>
+<li>Both loops treat each frame in the same way. No branch that affects the output files depends on the frame number, other than sorting.</li>
+<li>3 frames provide a first, a middle, and a last frame, so a gap and an order error can both occur.</li>
+<li>More frames therefore add longer paths, and the argument finds no new kind of step.</li>
+<li>The 5 breaks use steps that exist at any frame count. The replays reproduced them on folders of 0 to 3 frames, not on 930 frames.</li>
+</ul>
+<p>This is an argument, not a proof. No one ran TLC at 930 frames, and no symmetry proof was written. For a rule that <em>holds</em>, the pass is a result for these bounds only. The fact cases for <code>post.py</code> did use the frame numbers 1 to 930. The fact cases for <code>render_frames.py</code> used frames 1 to 3.</p>
+
+<h2 id="s5">5. The 5 bugs</h2>
+<p>The bug numbers match the findings in <code>SKILL.md</code>. The evidence level says what reproduced each bug.</p>
+
+<div class="card">
+<h3>Bug 1: a resume keeps a damaged frame</h3>
+<dl>
+<dt>Rule broken</dt><dd><code>ResumeNeverKeepsDamagedFrame</code></dd>
+<dt>Cause</dt><dd><code>render_frames.py:23</code>, <code>if os.path.exists(path):</code>, treats "the file exists" as "the frame is complete". <code>render_frames.py:25-26</code> writes directly to the final name, so an incomplete file can exist.</dd>
+<dt>Steps</dt><dd><ol>
+<li>Blender opens <code>f0002.png</code>, and the file exists at 0 bytes.</li>
+<li>The Blender process stops. <code>f0002.png</code> stays at 0 bytes.</li>
+<li>The same render command runs. It skips frames 1 and 2, renders only frame 3, and ends normally with exit 0.</li>
+<li><code>post.py</code> reaches frame 2 and crashes at <code>post.py:47</code>: <code>AttributeError: 'NoneType' object has no attribute 'astype'</code>.</li>
+<li>Each restart repeats steps 3 and 4 until someone finds the file.</li>
+</ol></dd>
+<dt>Harm</dt><dd>The render reports success with a damaged frame, and the failure appears only in the later encode. The crash occurs when <code>post.py</code> reaches that frame, so a late frame costs up to the full encode time, about 35 minutes.</dd>
+<dt>How likely</dt><dd>Estimate, not a measurement: about 0.3 s of a 22.7 s mean frame is 1.3%, so about 1 stop in 75 lands in the write. The test scene's file was larger than the real frames (1.8 MB to 3.3 MB), and the real render used the GPU.</dd>
+<dt>Evidence level</dt><dd><strong>Reproduced with real tools.</strong> Real Blender was killed in the write, then real <code>render_frames.py</code>, cv2, and ffmpeg ran.</dd>
+<dt>Fix direction</dt><dd>Render to a temporary name, then rename with <code>os.replace</code> after Blender returns. Also make the skip test confirm the PNG end chunk, so that older damaged files are rendered again. Test the temporary name with real Blender, because Blender's handling of output names was not tested.</dd>
+</dl>
+</div>
+
+<div class="card">
+<h3>Bug 2: a crash or stop replaces the good film</h3>
+<dl>
+<dt>Rule broken</dt><dd><code>FilmNameAlwaysWhole</code></dd>
+<dt>Cause</dt><dd><code>post.py:79-81</code> starts <code>ffmpeg -y</code> on the final name, <code>[out_path]</code>, before it processes a frame.</dd>
+<dt>Steps</dt><dd><ol>
+<li>A 3-frame film has the final name.</li>
+<li><code>post.py</code> starts on a frame folder with a damaged frame 2. ffmpeg overwrites the film's name.</li>
+<li><code>post.py</code> sends frame 1, then crashes on frame 2.</li>
+<li>The final name now holds a 1-frame film. The 3-frame film is gone.</li>
+</ol></dd>
+<dt>Harm</dt><dd>A previous good film is lost, and the file under its name looks finished. The real <code>stitches_final_v2.mp4</code> took about 35 minutes to encode.</dd>
+<dt>Evidence level</dt><dd><strong>Reproduced with real tools:</strong> the frame count measured with ffprobe went from 3 to 1. A user stop in this project also left a 2,359,344-byte file under the final name.</dd>
+<dt>Fix direction</dt><dd>Encode to a temporary name such as <code>out.partial.mp4</code>, and rename it only after ffmpeg exits 0.</dd>
+</dl>
+</div>
+
+<div class="card">
+<h3>Bug 3: OK with frames missing</h3>
+<dl>
+<dt>Rule broken</dt><dd><code>OKMeansEveryFrame</code></dd>
+<dt>Cause</dt><dd><code>post.py:78</code> takes whichever files exist, and <code>post.py:89</code> prints OK with no comparison against the expected list.</dd>
+<dt>Steps</dt><dd><ol>
+<li>A render is stopped after frame 1, so only <code>f0001.png</code> exists.</li>
+<li><code>post.py</code> runs on the folder.</li>
+<li>It prints OK and exits 0. The film has 1 frame.</li>
+<li>On an empty folder, it prints <code>OK film.mp4 0 frames</code> and exits 0. The file is 261 bytes and has no frames.</li>
+</ol></dd>
+<dt>Harm</dt><dd>A short or empty film looks finished. The printed count is the only sign, and nothing compares it with 930.</dd>
+<dt>Evidence level</dt><dd><strong>Reproduced with real tools.</strong></dd>
+<dt>Fix direction</dt><dd>Before encoding, compare the files with the expected frame numbers, and stop with a non-zero exit if any is missing.</dd>
+</dl>
+</div>
+
+<div class="card">
+<h3>Bug 4: OK with frames from an old scene</h3>
+<dl>
+<dt>Rule broken</dt><dd><code>OKMeansOneScene</code></dd>
+<dt>Cause</dt><dd><code>render_frames.py:23</code> does not compare a frame with the scene, and <code>post.py:78</code> and <code>post.py:89</code> do not either. Nothing removes old frames after a rebuild.</dd>
+<dt>Steps</dt><dd><ol>
+<li>All frames exist from an earlier scene.</li>
+<li>The scene file is rebuilt.</li>
+<li>The same render command runs and renders 0 frames, because all files exist. The frame files stay unchanged.</li>
+<li><code>post.py</code> prints OK. The film shows the old scene.</li>
+<li>If a stop came before the rebuild, the folder can hold frames from two scenes: old frames that stay, and new frames for those that were missing.</li>
+</ol></dd>
+<dt>Harm</dt><dd>A scene fix does not reach the film, or reaches only part of it, and every message reports success. The project's own notes say that a geometry change needs a rebuild and a new render.</dd>
+<dt>Evidence level</dt><dd><strong>Reproduced with real tools</strong> for steps 1 to 4. The "rebuilt" scene was a copy with a newer time and the same content. That is sufficient here, because the skip test does not read the scene. Step 5 follows from the same lines and was not replayed.</dd>
+<dt>Workaround</dt><dd>Use a new frame folder after each scene rebuild.</dd>
+<dt>Fix direction</dt><dd>Key the frame folder to the scene, or skip a frame only if it is newer than the scene file. Make <code>post.py</code> apply the same test.</dd>
+</dl>
+</div>
+
+<div class="card">
+<h3>Bug 5: OK when ffmpeg failed</h3>
+<dl>
+<dt>Rule broken</dt><dd><code>OKMeansFfmpegSucceeded</code></dd>
+<dt>Cause</dt><dd><code>post.py:88-89</code>: <code>p.wait()</code> returns ffmpeg's exit code, nothing reads it, and the next line prints OK.</dd>
+<dt>Steps</dt><dd><ol>
+<li>The stand-in for ffmpeg reads all its input, then exits 1.</li>
+<li><code>post.py</code> prints OK and exits 0.</li>
+<li>No film file exists.</li>
+</ol></dd>
+<dt>Harm</dt><dd>A failed film looks finished, and a script that runs after <code>post.py</code> sees exit 0.</dd>
+<dt>Evidence level</dt><dd><strong>Stand-in only.</strong> The real <code>post.py</code>, cv2, and frames ran, but a small program took the place of ffmpeg. No real ffmpeg failure at the end of a file, such as a full disk, was produced. By reasoning only, and not tested: an ffmpeg failure at the start would probably raise a broken-pipe error at the frame write, and so would not print OK.</dd>
+<dt>Fix direction</dt><dd>Read the code from <code>p.wait()</code>. If it is not 0, exit non-zero and do not print OK.</dd>
+</dl>
+</div>
+
+<h3>How the bugs combine</h3>
+<h4>Bugs 1 and 2 form a chain</h4>
+<ol>
+<li>A stop leaves a 0-byte frame (bug 1).</li>
+<li>The resume skips it and reports success (bug 1).</li>
+<li><code>post.py</code> starts, and <code>ffmpeg -y</code> overwrites the good film's name (bug 2).</li>
+<li><code>post.py</code> crashes at the damaged frame (bug 1).</li>
+<li>The good film is gone, and a short film has its name (bug 2).</li>
+</ol>
+<p>So one stop in the 0.3 s write can cost one frame and the previous film. The crash gives exit 1, so this chain is visible. Bug 2 does not need bug 1: any crash or stop of <code>post.py</code> has the same effect on the film's name.</p>
+<h4>Bugs 3, 4, and 5 share a root cause</h4>
+<p><code>post.py:89</code> prints OK whenever the loop ends. It does not test the three things that "OK" should mean: all frames present (bug 3), all frames from the current scene (bug 4), and ffmpeg successful (bug 5). In all three cases, <code>post.py</code> prints OK and exits 0.</p>
+<p>One further link: bugs 1 and 4 both come from <code>render_frames.py:23</code>, where "the file exists" stands for both "complete" and "current".</p>
+<h4>Suggested repair order</h4>
+<p>This is a suggestion. Nothing has been repaired.</p>
+<ol>
+<li>Bugs 5 and 3: small tests in <code>video()</code>, with no change to the output file.</li>
+<li>Bug 2: a temporary film name. It protects the existing film from every later failure.</li>
+<li>Bug 1: a completeness test and a temporary PNG name, tested with real Blender.</li>
+<li>Bug 4: a scene test, after a decision on how to key frames to a scene.</li>
+</ol>
+
+<h2 id="s6">6. What holds, what is not covered, and the assumptions</h2>
+<h3>The 4 rules that hold</h3>
+<div class="table"><table>
+<thead><tr><th>Rule</th><th>The code that guards it</th><th>What it means in practice</th></tr></thead>
+<tbody>
+<tr><td><code>ResumeRedoesNoFinishedWork</code></td><td><code>render_frames.py:23-24</code></td><td>A restart keeps finished frames. A 5.85-hour render is not lost. The same line causes bugs 1 and 4, so a repair must keep this behavior for a complete, current frame.</td></tr>
+<tr><td><code>RunCoversEveryFrame</code></td><td><code>render_frames.py:21-26</code></td><td>A run that reaches the end of its list leaves a file for each listed number. The file can still be damaged (bug 1).</td></tr>
+<tr><td><code>FramesStayInOrder</code></td><td><code>post.py:78</code></td><td>Frames reach ffmpeg in number order, whatever order the file system gives.</td></tr>
+<tr><td><code>OKMeansNoDamagedFrame</code></td><td><code>post.py:47</code></td><td>A frame cut short stops the run, so it cannot enter a film that gets "OK". This is a side effect of a crash, not a deliberate check. It depends on the cv2 behavior measured below.</td></tr>
+</tbody></table></div>
+
+<h3>Not covered</h3>
+<ul>
+<li>Picture or sound quality, and whether a frame matches its scene.</li>
+<li>A frame file changed or removed by something outside the two tools.</li>
+<li>A complete PNG with wrong pixels, such as a bad GPU render.</li>
+<li>Two render jobs on one folder.</li>
+<li>A scene rebuild while a render runs. The model waits, because Blender loads the scene once.</li>
+<li><code>post.py sheet</code>, <code>mix.py</code>, <code>measure.py</code>, and <code>build_scene.py</code>.</li>
+<li>Any way to detect an old frame other than file times. <code>PostChecksScene</code> looks only at <code>build/scene.blend</code> against the frame file times, so a repair with another method needs a new case in <code>check.py</code>.</li>
+<li>Anything outside the model's bounds, as <a href="#bounds">section 4</a> explains.</li>
+</ul>
+
+<h3>Measured once, and not rechecked by the command</h3>
+<p><code>check.py</code> does not run real Blender or real cv2. These results were measured once, and the fakes assume them:</p>
+<dl>
+<dt>Blender writes a PNG straight to the final name</dt><dd>Measured with Blender 5.2.1 on Windows, with a CPU render of the test scene. The real render used the OptiX GPU. A later Blender can differ. Only 0 bytes and the full size were seen, across 178,432 folder polls in one run.</dd>
+<dt><code>cv2.imread</code> gives <code>None</code> on a PNG cut short</dt><dd>Measured with cv2 4.13.0 at 9 cut positions, on Windows Python 3.13. A later cv2 can differ, and <code>post.py</code> does not pin a cv2 version. If cv2 started to return partial images, <code>OKMeansNoDamagedFrame</code> could break, and the check would not see that.</dd>
+</dl>
+<p><strong>A further limit:</strong> the code facts come from scripted cases. <code>check.py</code> also compares the two files with the recorded commit and reports a difference, so a change that the cases miss still shows as a code change for a person to read.</p>
+
+<h2 id="s7">7. How to rerun the check</h2>
+<p>Run this in WSL from the repo root. It takes about 15 seconds. A fresh clone does not have this script: see <a href="#gitignore">the <code>.gitignore</code> whitelist</a> below.</p>
+<pre><code>python3 .claude/skills/verify-frame-pipeline/check.py</code></pre>
+<div class="table"><table>
+<thead><tr><th>Exit</th><th>Meaning</th><th>Do this</th></tr></thead>
+<tbody>
+<tr><td><strong>0</strong></td><td>Every rule holds.</td><td>This can occur only after all 5 bugs are repaired. A repair gives exit 2 first, because code facts change. Then update <code>KNOWN_FINDINGS</code> and <code>EXPECTED</code> in <code>check.py</code>, and the sync commit in <code>SKILL.md</code>.</td></tr>
+<tr><td><strong>1</strong></td><td>Only the known findings break, and no code fact changed. <strong>This is the current result.</strong></td><td>Your change added no break. The 5 findings stay open.</td></tr>
+<tr><td><strong>2</strong></td><td>A new rule breaks, a finding stopped breaking, or a code fact changed.</td><td>Read which fact changed. Replay the path against the real code. A step that cannot happen means the model is wrong. If every step can happen, the code has a bug.</td></tr>
+<tr><td><strong>3</strong></td><td>The check could not run.</td><td>Read the message. This result says nothing about the code.</td></tr>
+</tbody></table></div>
+<p>Options:</p>
+<ul>
+<li><code>--tools DIR</code> checks a copy of <code>render_frames.py</code> and <code>post.py</code> in place of <code>tools/</code>.</li>
+<li><code>--out DIR</code> writes the spec, a configuration with all rules, and <code>view.mjs</code> to a new folder outside the repo. Give these to pstack's <code>/statechart</code> skill to get the shortest paths in plain words.</li>
+</ul>
+<p>Set <code>PYTHONDONTWRITEBYTECODE=1</code> to keep the check from writing a cache file. Without it, the check writes <code>tools/__pycache__/post.cpython-312.pyc</code>. Git ignores that folder.</p>
+
+<h3>Setup</h3>
+<ul>
+<li><strong>Python 3</strong> with no packages (used: 3.12.3).</li>
+<li><strong>Java 11 or later</strong> (used: OpenJDK 21.0.12.1).</li>
+<li><strong>TLA+ tools v1.7.4</strong> at <code>$TLA2TOOLS</code> or <code>~/tla/tla2tools.jar</code>. The check refuses a jar with another SHA-256.</li>
+<li><strong>git</strong>, to compare the code with the recorded commit.</li>
+</ul>
+<pre><code>mkdir -p ~/tla
+curl -fL -o ~/tla/tla2tools.jar https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
+echo "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  $HOME/tla/tla2tools.jar" | sha256sum -c</code></pre>
+<p>On the laptop used for this work, large downloads inside WSL often fail with a TLS error. The cause is not known. If the download fails, repeat it, or download the file on Windows and copy it. The checksum applies in both cases.</p>
+<p>In WSL, <code>git status</code> also lists 4 tracked files as modified: <code>DEVELOPMENT-JOURNEY.html</code>, <code>README.md</code>, <code>README.txt</code>, and <code>tools/build_scene.py</code>. Those are line-ending differences only. Use the Windows view for the true status.</p>
+
+<h3>Keeping the check true: the maintain skill</h3>
+<p>A model can pass while it describes code that no longer exists. The generated skill records the commit where the model last matched the code:</p>
+<pre><code>sync-commit: 1ffe98ee21f26ae40679f953f5a1f78eceb6406f</code></pre>
+<p>After merges or edits that skipped the check, type <code>/pstack:maintain-formal-verification-skill</code> in Claude Code in WSL. That pstack skill reads each change since the sync commit, updates the model from the code, reruns the check, and proves that an updated check can still fail. It gives each check one outcome:</p>
+<ul>
+<li><strong>in sync:</strong> no change alters what the check describes, and the check passes.</li>
+<li><strong>updated:</strong> the verification now describes the new code, and the check passes.</li>
+<li><strong>bug:</strong> the verification describes the current code, and the code breaks the property.</li>
+<li><strong>blocked:</strong> the check could not be brought back in line or could not run.</li>
+</ul>
+<p>Today, with bugs 1 to 5 open, the check does not pass on the current code, so expect the <strong>bug</strong> outcome for those rules. pstack is enabled at project scope for this folder in WSL Claude Code only. Typed <code>/pstack:</code> commands were not tested. Those skills do not start by themselves, so you must type the command.</p>
+
+<h3 id="gitignore">The .gitignore whitelist</h3>
+<p><code>.gitignore</code> starts with <code>*</code> and then lists the files to publish, so git ignores everything else. This report is on that list. The check's own files are not. They stay on the laptop where the check was made, and a fresh clone does not have them:</p>
+<ul>
+<li><code>.claude/settings.json</code></li>
+<li><code>.claude/skills/verify-frame-pipeline/SKILL.md</code></li>
+<li><code>.claude/skills/verify-frame-pipeline/FramePipeline.tla</code></li>
+<li><code>.claude/skills/verify-frame-pipeline/check.py</code></li>
+<li><code>.claude/skills/verify-frame-pipeline/view.mjs</code></li>
+</ul>
+<p>To publish them, add <code>!</code> rules to <code>.gitignore</code> for those paths and their parent folders. Those rules have not been added.</p>
+</main>
+</body>
+</html>
